@@ -59,6 +59,22 @@ enum FinanceRequestStatus {
   PAID
 }
 
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum ReportType {
+  REPORT_CARD
+  FEE_STATEMENT
+  ATTENDANCE
+  STUDENT_PROFILE
+  ACADEMIC_SUMMARY
+  FINANCE_SUMMARY
+}
+
 model SubscriptionPackage {
   id          String   @id @default(uuid())
   name        String   @unique
@@ -72,33 +88,61 @@ model SubscriptionPackage {
 }
 
 model School {
-  id          String   @id @default(uuid())
-  name        String
-  code        String   @unique
-  country     String
-  county      String?
-  email       String?
-  phone       String?
-  status      String   @default("ACTIVE")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  country   String
+  county    String?
+  email     String?
+  phone     String?
+  logoUrl   String?
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  subscriptions SchoolSubscription[]
-  users         User[]
-  departments   Department[]
-  academicYears AcademicYear[]
-  students      Student[]
-  guardians     Guardian[]
-  classes       Class[]
-  streams       Stream[]
-  subjects      Subject[]
-  exams         Exam[]
-  marks         Mark[]
-  gradeScales   GradeScale[]
-  invoices      Invoice[]
-  payments      Payment[]
-  expenses      Expense[]
-  auditLogs     AuditLog[]
+  subscriptions      SchoolSubscription[]
+  settings           SchoolSetting[]
+  users              User[]
+  departments        Department[]
+  academicYears      AcademicYear[]
+  students           Student[]
+  guardians          Guardian[]
+  classes            Class[]
+  streams            Stream[]
+  subjects           Subject[]
+  teacherClasses     TeacherClassAssignment[]
+  teacherSubjects    TeacherSubjectAssignment[]
+  exams              Exam[]
+  examSubjects       ExamSubject[]
+  examSchedules      ExamSchedule[]
+  marks              Mark[]
+  gradeScales        GradeScale[]
+  approvals          AcademicApproval[]
+  approvalComments   ApprovalComment[]
+  studentAttendance  StudentAttendance[]
+  staffAttendance    StaffAttendance[]
+  feeStructures      FeeStructure[]
+  invoices           Invoice[]
+  invoiceItems       InvoiceItem[]
+  payments           Payment[]
+  paymentAllocations PaymentAllocation[]
+  receipts           Receipt[]
+  expenses           Expense[]
+  reportSnapshots    ReportSnapshot[]
+  auditLogs          AuditLog[]
+}
+
+model SchoolSetting {
+  id        String   @id @default(uuid())
+  schoolId  String
+  key       String
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@unique([schoolId, key])
 }
 
 model SchoolSubscription {
@@ -129,11 +173,16 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  school      School?            @relation(fields: [schoolId], references: [id])
-  roles       UserRole[]
-  departments DepartmentMember[]
-  marks       Mark[]             @relation("MarkCreatedBy")
-  auditLogs   AuditLog[]
+  school             School?                    @relation(fields: [schoolId], references: [id])
+  roles              UserRole[]
+  departments        DepartmentMember[]
+  classAssignments   TeacherClassAssignment[]   @relation("TeacherClassAssignments")
+  subjectAssignments TeacherSubjectAssignment[] @relation("TeacherSubjectAssignments")
+  marks              Mark[]                     @relation("MarkCreatedBy")
+  createdApprovals   AcademicApproval[]         @relation("AcademicApprovalActor")
+  approvalComments   ApprovalComment[]          @relation("ApprovalCommentAuthor")
+  staffAttendance    StaffAttendance[]          @relation("StaffAttendanceUser")
+  auditLogs          AuditLog[]
 }
 
 model Role {
@@ -152,8 +201,8 @@ model Role {
 }
 
 model Permission {
-  id          String @id @default(uuid())
-  action      String @unique
+  id          String  @id @default(uuid())
+  action      String  @unique
   description String?
 
   roles RolePermission[]
@@ -239,7 +288,7 @@ model Term {
 }
 
 model Curriculum {
-  id          String         @id @default(uuid())
+  id          String            @id @default(uuid())
   type        CurriculumType
   name        String
   country     String?
@@ -264,9 +313,10 @@ model Class {
   level     String
   createdAt DateTime @default(now())
 
-  school   School   @relation(fields: [schoolId], references: [id])
-  streams  Stream[]
-  students Student[]
+  school             School                   @relation(fields: [schoolId], references: [id])
+  streams            Stream[]
+  students           Student[]
+  teacherAssignments TeacherClassAssignment[]
 
   @@unique([schoolId, name])
 }
@@ -285,20 +335,54 @@ model Stream {
 }
 
 model Subject {
-  id           String   @id @default(uuid())
+  id           String         @id @default(uuid())
   schoolId     String
   curriculumId String?
   name         String
   code         String
   mode         AssessmentMode
   maxMarks     Int?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime       @default(now())
 
-  school     School      @relation(fields: [schoolId], references: [id])
-  curriculum Curriculum? @relation(fields: [curriculumId], references: [id])
-  marks      Mark[]
+  school             School                     @relation(fields: [schoolId], references: [id])
+  curriculum         Curriculum?                @relation(fields: [curriculumId], references: [id])
+  teacherAssignments TeacherSubjectAssignment[]
+  examSubjects       ExamSubject[]
+  examSchedules      ExamSchedule[]
+  marks              Mark[]
 
   @@unique([schoolId, code])
+}
+
+model TeacherClassAssignment {
+  id        String    @id @default(uuid())
+  schoolId  String
+  teacherId String
+  classId   String
+  startsAt  DateTime  @default(now())
+  endsAt    DateTime?
+
+  school  School @relation(fields: [schoolId], references: [id])
+  teacher User   @relation("TeacherClassAssignments", fields: [teacherId], references: [id])
+  class   Class  @relation(fields: [classId], references: [id])
+
+  @@unique([teacherId, classId])
+}
+
+model TeacherSubjectAssignment {
+  id        String    @id @default(uuid())
+  schoolId  String
+  teacherId String
+  subjectId String
+  classId   String?
+  startsAt  DateTime  @default(now())
+  endsAt    DateTime?
+
+  school  School  @relation(fields: [schoolId], references: [id])
+  teacher User    @relation("TeacherSubjectAssignments", fields: [teacherId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+
+  @@unique([teacherId, subjectId, classId])
 }
 
 model Student {
@@ -315,13 +399,17 @@ model Student {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  school    School            @relation(fields: [schoolId], references: [id])
-  class     Class?            @relation(fields: [classId], references: [id])
-  stream    Stream?           @relation(fields: [streamId], references: [id])
-  guardians StudentGuardian[]
-  marks     Mark[]
-  invoices  Invoice[]
-  payments  Payment[]
+  school         School                 @relation(fields: [schoolId], references: [id])
+  class          Class?                 @relation(fields: [classId], references: [id])
+  stream         Stream?                @relation(fields: [streamId], references: [id])
+  guardians      StudentGuardian[]
+  documents      StudentDocument[]
+  medicalRecords StudentMedicalRecord[]
+  transfers      StudentTransfer[]
+  attendance     StudentAttendance[]
+  marks          Mark[]
+  invoices       Invoice[]
+  payments       Payment[]
 
   @@unique([schoolId, admissionNumber])
 }
@@ -352,6 +440,41 @@ model StudentGuardian {
   @@unique([studentId, guardianId])
 }
 
+model StudentDocument {
+  id        String   @id @default(uuid())
+  schoolId  String
+  studentId String
+  title     String
+  fileUrl   String
+  type      String?
+  createdAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id])
+}
+
+model StudentMedicalRecord {
+  id         String   @id @default(uuid())
+  schoolId   String
+  studentId  String
+  condition  String
+  notes      String?
+  recordedAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id])
+}
+
+model StudentTransfer {
+  id            String   @id @default(uuid())
+  schoolId      String
+  studentId     String
+  fromSchool    String?
+  toSchool      String?
+  reason        String?
+  transferredAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id])
+}
+
 model Exam {
   id             String         @id @default(uuid())
   schoolId       String
@@ -362,12 +485,44 @@ model Exam {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  school       School       @relation(fields: [schoolId], references: [id])
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
-  term         Term         @relation(fields: [termId], references: [id])
+  school       School             @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear       @relation(fields: [academicYearId], references: [id])
+  term         Term               @relation(fields: [termId], references: [id])
+  subjects     ExamSubject[]
+  schedules    ExamSchedule[]
   marks        Mark[]
+  approvals    AcademicApproval[]
 
   @@unique([schoolId, academicYearId, termId, name])
+}
+
+model ExamSubject {
+  id        String  @id @default(uuid())
+  schoolId  String
+  examId    String
+  subjectId String
+  weight    Decimal @default(1) @db.Decimal(6, 2)
+  maxMarks  Int?
+
+  school  School  @relation(fields: [schoolId], references: [id])
+  exam    Exam    @relation(fields: [examId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+
+  @@unique([examId, subjectId])
+}
+
+model ExamSchedule {
+  id        String   @id @default(uuid())
+  schoolId  String
+  examId    String
+  subjectId String
+  startsAt  DateTime
+  endsAt    DateTime
+  room      String?
+
+  school  School  @relation(fields: [schoolId], references: [id])
+  exam    Exam    @relation(fields: [examId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
 }
 
 model Mark {
@@ -400,17 +555,17 @@ model GradeScale {
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  school School      @relation(fields: [schoolId], references: [id])
+  school School       @relation(fields: [schoolId], references: [id])
   ranges GradeRange[]
 
   @@unique([schoolId, name])
 }
 
 model GradeRange {
-  id           String  @id @default(uuid())
+  id           String   @id @default(uuid())
   gradeScaleId String
-  minScore     Decimal @db.Decimal(6, 2)
-  maxScore     Decimal @db.Decimal(6, 2)
+  minScore     Decimal  @db.Decimal(6, 2)
+  maxScore     Decimal  @db.Decimal(6, 2)
   grade        String
   remark       String?
   points       Decimal? @db.Decimal(6, 2)
@@ -418,36 +573,160 @@ model GradeRange {
   gradeScale GradeScale @relation(fields: [gradeScaleId], references: [id])
 }
 
-model Invoice {
+model AcademicApproval {
+  id        String         @id @default(uuid())
+  schoolId  String
+  examId    String
+  actorId   String
+  level     String
+  status    ApprovalStatus
+  createdAt DateTime       @default(now())
+
+  school   School            @relation(fields: [schoolId], references: [id])
+  exam     Exam              @relation(fields: [examId], references: [id])
+  actor    User              @relation("AcademicApprovalActor", fields: [actorId], references: [id])
+  comments ApprovalComment[]
+}
+
+model ApprovalComment {
+  id         String   @id @default(uuid())
+  schoolId   String
+  approvalId String
+  authorId   String
+  comment    String
+  createdAt  DateTime @default(now())
+
+  school   School           @relation(fields: [schoolId], references: [id])
+  approval AcademicApproval @relation(fields: [approvalId], references: [id])
+  author   User             @relation("ApprovalCommentAuthor", fields: [authorId], references: [id])
+}
+
+model StudentAttendance {
+  id        String           @id @default(uuid())
+  schoolId  String
+  studentId String
+  date      DateTime
+  status    AttendanceStatus
+  notes     String?
+  createdAt DateTime         @default(now())
+
+  school  School  @relation(fields: [schoolId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+
+  @@unique([studentId, date])
+}
+
+model StaffAttendance {
+  id        String           @id @default(uuid())
+  schoolId  String
+  userId    String
+  date      DateTime
+  status    AttendanceStatus
+  notes     String?
+  createdAt DateTime         @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+  user   User   @relation("StaffAttendanceUser", fields: [userId], references: [id])
+
+  @@unique([userId, date])
+}
+
+model FeeStructure {
   id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  classId   String?
+  termId    String?
+  createdAt DateTime @default(now())
+
+  school School    @relation(fields: [schoolId], references: [id])
+  items  FeeItem[]
+
+  @@unique([schoolId, name])
+}
+
+model FeeItem {
+  id             String  @id @default(uuid())
+  feeStructureId String
+  name           String
+  amount         Decimal @db.Decimal(12, 2)
+
+  feeStructure FeeStructure @relation(fields: [feeStructureId], references: [id])
+}
+
+model Invoice {
+  id        String    @id @default(uuid())
   schoolId  String
   studentId String
   number    String
-  amount    Decimal  @db.Decimal(12, 2)
-  balance   Decimal  @db.Decimal(12, 2)
+  amount    Decimal   @db.Decimal(12, 2)
+  balance   Decimal   @db.Decimal(12, 2)
   dueDate   DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
-  school   School    @relation(fields: [schoolId], references: [id])
-  student  Student   @relation(fields: [studentId], references: [id])
-  payments Payment[]
+  school      School              @relation(fields: [schoolId], references: [id])
+  student     Student             @relation(fields: [studentId], references: [id])
+  items       InvoiceItem[]
+  payments    Payment[]
+  allocations PaymentAllocation[]
+  receipts    Receipt[]
 
   @@unique([schoolId, number])
 }
 
-model Payment {
-  id          String   @id @default(uuid())
+model InvoiceItem {
+  id          String  @id @default(uuid())
   schoolId    String
-  studentId   String
-  invoiceId   String?
-  amount      Decimal  @db.Decimal(12, 2)
-  method      String
-  reference   String?
-  receivedAt  DateTime @default(now())
+  invoiceId   String
+  description String
+  amount      Decimal @db.Decimal(12, 2)
+
+  school  School  @relation(fields: [schoolId], references: [id])
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+}
+
+model Payment {
+  id         String   @id @default(uuid())
+  schoolId   String
+  studentId  String
+  invoiceId  String?
+  amount     Decimal  @db.Decimal(12, 2)
+  method     String
+  reference  String?
+  receivedAt DateTime @default(now())
+
+  school      School              @relation(fields: [schoolId], references: [id])
+  student     Student             @relation(fields: [studentId], references: [id])
+  invoice     Invoice?            @relation(fields: [invoiceId], references: [id])
+  allocations PaymentAllocation[]
+  receipt     Receipt?
+}
+
+model PaymentAllocation {
+  id        String  @id @default(uuid())
+  schoolId  String
+  paymentId String
+  invoiceId String
+  amount    Decimal @db.Decimal(12, 2)
+
+  school  School  @relation(fields: [schoolId], references: [id])
+  payment Payment @relation(fields: [paymentId], references: [id])
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+}
+
+model Receipt {
+  id        String   @id @default(uuid())
+  schoolId  String
+  paymentId String   @unique
+  invoiceId String?
+  number    String
+  issuedAt  DateTime @default(now())
 
   school  School   @relation(fields: [schoolId], references: [id])
-  student Student  @relation(fields: [studentId], references: [id])
+  payment Payment  @relation(fields: [paymentId], references: [id])
   invoice Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@unique([schoolId, number])
 }
 
 model Expense {
@@ -459,6 +738,17 @@ model Expense {
   description String?
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model ReportSnapshot {
+  id        String     @id @default(uuid())
+  schoolId  String
+  type      ReportType
+  title     String
+  payload   Json
+  createdAt DateTime   @default(now())
 
   school School @relation(fields: [schoolId], references: [id])
 }

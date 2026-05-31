@@ -17,8 +17,18 @@ export class StudentsService {
     });
   }
 
-  create(user: AuthUser, dto: CreateStudentDto) {
+  async create(user: AuthUser, dto: CreateStudentDto) {
     const schoolId = this.requireSchool(user);
+    if (dto.classId) {
+      await this.prisma.class.findFirstOrThrow({
+        where: { id: dto.classId, schoolId },
+      });
+    }
+    if (dto.streamId) {
+      await this.prisma.stream.findFirstOrThrow({
+        where: { id: dto.streamId, schoolId, classId: dto.classId },
+      });
+    }
 
     return this.prisma.student.create({
       data: {

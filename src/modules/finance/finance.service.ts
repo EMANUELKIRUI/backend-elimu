@@ -19,8 +19,12 @@ export class FinanceService {
     });
   }
 
-  createInvoice(user: AuthUser, dto: CreateInvoiceDto) {
+  async createInvoice(user: AuthUser, dto: CreateInvoiceDto) {
     const schoolId = this.requireSchool(user);
+    await this.prisma.student.findFirstOrThrow({
+      where: { id: dto.studentId, schoolId },
+    });
+
     return this.prisma.invoice.create({
       data: {
         schoolId,
@@ -37,6 +41,16 @@ export class FinanceService {
     const schoolId = this.requireSchool(user);
 
     return this.prisma.$transaction(async (tx) => {
+      await tx.student.findFirstOrThrow({
+        where: { id: dto.studentId, schoolId },
+      });
+
+      if (dto.invoiceId) {
+        await tx.invoice.findFirstOrThrow({
+          where: { id: dto.invoiceId, schoolId, studentId: dto.studentId },
+        });
+      }
+
       const payment = await tx.payment.create({
         data: {
           schoolId,
@@ -52,6 +66,22 @@ export class FinanceService {
         await tx.invoice.update({
           where: { id: dto.invoiceId },
           data: { balance: { decrement: new Prisma.Decimal(dto.amount) } },
+        });
+        await tx.paymentAllocation.create({
+          data: {
+            schoolId,
+            paymentId: payment.id,
+            invoiceId: dto.invoiceId,
+            amount: dto.amount,
+          },
+        });
+        await tx.receipt.create({
+          data: {
+            schoolId,
+            paymentId: payment.id,
+            invoiceId: dto.invoiceId,
+            number: `RCPT-${Date.now()}`,
+          },
         });
       }
 

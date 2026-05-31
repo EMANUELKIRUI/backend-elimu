@@ -50,8 +50,15 @@ export class AcademicsService {
     });
   }
 
-  createExam(user: AuthUser, dto: CreateExamDto) {
+  async createExam(user: AuthUser, dto: CreateExamDto) {
     const schoolId = this.requireSchool(user);
+    await this.prisma.academicYear.findFirstOrThrow({
+      where: { id: dto.academicYearId, schoolId },
+    });
+    await this.prisma.term.findFirstOrThrow({
+      where: { id: dto.termId, academicYear: { schoolId } },
+    });
+
     return this.prisma.exam.create({ data: { schoolId, ...dto } });
   }
 
@@ -67,6 +74,9 @@ export class AcademicsService {
 
     const subject = await this.prisma.subject.findFirstOrThrow({
       where: { id: dto.subjectId, schoolId },
+    });
+    await this.prisma.student.findFirstOrThrow({
+      where: { id: dto.studentId, schoolId },
     });
 
     if (subject.maxMarks && dto.score > subject.maxMarks) {
