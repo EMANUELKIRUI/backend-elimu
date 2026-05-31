@@ -1,0 +1,479 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  CANCELLED
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  INVITED
+}
+
+enum StudentStatus {
+  APPLICANT
+  ADMITTED
+  ACTIVE
+  TRANSFERRED
+  GRADUATED
+  ALUMNI
+}
+
+enum CurriculumType {
+  KENYA_CBC
+  KENYA_844
+  GENERIC_MARKS
+  GENERIC_COMPETENCY
+}
+
+enum AssessmentMode {
+  MARKS
+  COMPETENCY
+}
+
+enum ApprovalStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  LOCKED
+}
+
+enum FinanceRequestStatus {
+  DRAFT
+  SUBMITTED
+  DEPUTY_APPROVED
+  PRINCIPAL_APPROVED
+  REJECTED
+  PAID
+}
+
+model SubscriptionPackage {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  monthlyFee  Decimal? @db.Decimal(12, 2)
+  modules     Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions SchoolSubscription[]
+}
+
+model School {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  country     String
+  county      String?
+  email       String?
+  phone       String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions SchoolSubscription[]
+  users         User[]
+  departments   Department[]
+  academicYears AcademicYear[]
+  students      Student[]
+  guardians     Guardian[]
+  classes       Class[]
+  streams       Stream[]
+  subjects      Subject[]
+  exams         Exam[]
+  marks         Mark[]
+  gradeScales   GradeScale[]
+  invoices      Invoice[]
+  payments      Payment[]
+  expenses      Expense[]
+  auditLogs     AuditLog[]
+}
+
+model SchoolSubscription {
+  id        String             @id @default(uuid())
+  schoolId  String
+  packageId String
+  status    SubscriptionStatus @default(TRIAL)
+  startsAt  DateTime
+  endsAt    DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  school  School              @relation(fields: [schoolId], references: [id])
+  package SubscriptionPackage @relation(fields: [packageId], references: [id])
+}
+
+model User {
+  id           String     @id @default(uuid())
+  schoolId     String?
+  email        String?    @unique
+  username     String?    @unique
+  phone        String?    @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  status       UserStatus @default(ACTIVE)
+  refreshHash  String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  school      School?            @relation(fields: [schoolId], references: [id])
+  roles       UserRole[]
+  departments DepartmentMember[]
+  marks       Mark[]             @relation("MarkCreatedBy")
+  auditLogs   AuditLog[]
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  schoolId    String?
+  name        String
+  description String?
+  systemRole  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@unique([schoolId, name])
+}
+
+model Permission {
+  id          String @id @default(uuid())
+  action      String @unique
+  description String?
+
+  roles RolePermission[]
+}
+
+model UserRole {
+  id     String @id @default(uuid())
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+}
+
+model RolePermission {
+  id           String @id @default(uuid())
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  code      String
+  moduleKey String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school  School             @relation(fields: [schoolId], references: [id])
+  members DepartmentMember[]
+
+  @@unique([schoolId, code])
+}
+
+model DepartmentMember {
+  id           String  @id @default(uuid())
+  departmentId String
+  userId       String
+  isHod        Boolean @default(false)
+
+  department Department @relation(fields: [departmentId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@unique([departmentId, userId])
+}
+
+model AcademicYear {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  startsAt  DateTime
+  endsAt    DateTime
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+  terms  Term[]
+  exams  Exam[]
+
+  @@unique([schoolId, name])
+}
+
+model Term {
+  id             String   @id @default(uuid())
+  academicYearId String
+  name           String
+  startsAt       DateTime
+  endsAt         DateTime
+  isActive       Boolean  @default(false)
+
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  exams        Exam[]
+
+  @@unique([academicYearId, name])
+}
+
+model Curriculum {
+  id          String         @id @default(uuid())
+  type        CurriculumType
+  name        String
+  country     String?
+  description String?
+  levels      CurriculumLevel[]
+  subjects    Subject[]
+}
+
+model CurriculumLevel {
+  id           String @id @default(uuid())
+  curriculumId String
+  name         String
+  sequence     Int
+
+  curriculum Curriculum @relation(fields: [curriculumId], references: [id])
+}
+
+model Class {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  level     String
+  createdAt DateTime @default(now())
+
+  school   School   @relation(fields: [schoolId], references: [id])
+  streams  Stream[]
+  students Student[]
+
+  @@unique([schoolId, name])
+}
+
+model Stream {
+  id       String @id @default(uuid())
+  schoolId String
+  classId  String
+  name     String
+
+  school   School    @relation(fields: [schoolId], references: [id])
+  class    Class     @relation(fields: [classId], references: [id])
+  students Student[]
+
+  @@unique([classId, name])
+}
+
+model Subject {
+  id           String   @id @default(uuid())
+  schoolId     String
+  curriculumId String?
+  name         String
+  code         String
+  mode         AssessmentMode
+  maxMarks     Int?
+  createdAt    DateTime @default(now())
+
+  school     School      @relation(fields: [schoolId], references: [id])
+  curriculum Curriculum? @relation(fields: [curriculumId], references: [id])
+  marks      Mark[]
+
+  @@unique([schoolId, code])
+}
+
+model Student {
+  id              String        @id @default(uuid())
+  schoolId        String
+  classId         String?
+  streamId        String?
+  admissionNumber String
+  firstName       String
+  lastName        String
+  gender          String?
+  dateOfBirth     DateTime?
+  status          StudentStatus @default(ACTIVE)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  school    School            @relation(fields: [schoolId], references: [id])
+  class     Class?            @relation(fields: [classId], references: [id])
+  stream    Stream?           @relation(fields: [streamId], references: [id])
+  guardians StudentGuardian[]
+  marks     Mark[]
+  invoices  Invoice[]
+  payments  Payment[]
+
+  @@unique([schoolId, admissionNumber])
+}
+
+model Guardian {
+  id        String   @id @default(uuid())
+  schoolId  String
+  firstName String
+  lastName  String
+  phone     String
+  email     String?
+  createdAt DateTime @default(now())
+
+  school   School            @relation(fields: [schoolId], references: [id])
+  students StudentGuardian[]
+}
+
+model StudentGuardian {
+  id         String  @id @default(uuid())
+  studentId  String
+  guardianId String
+  relation   String
+  primary    Boolean @default(false)
+
+  student  Student  @relation(fields: [studentId], references: [id])
+  guardian Guardian @relation(fields: [guardianId], references: [id])
+
+  @@unique([studentId, guardianId])
+}
+
+model Exam {
+  id             String         @id @default(uuid())
+  schoolId       String
+  academicYearId String
+  termId         String
+  name           String
+  status         ApprovalStatus @default(DRAFT)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  school       School       @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  term         Term         @relation(fields: [termId], references: [id])
+  marks        Mark[]
+
+  @@unique([schoolId, academicYearId, termId, name])
+}
+
+model Mark {
+  id          String         @id @default(uuid())
+  schoolId    String
+  examId      String
+  studentId   String
+  subjectId   String
+  score       Decimal        @db.Decimal(6, 2)
+  grade       String?
+  points      Decimal?       @db.Decimal(6, 2)
+  status      ApprovalStatus @default(DRAFT)
+  createdById String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  school    School  @relation(fields: [schoolId], references: [id])
+  exam      Exam    @relation(fields: [examId], references: [id])
+  student   Student @relation(fields: [studentId], references: [id])
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  createdBy User    @relation("MarkCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([examId, studentId, subjectId])
+}
+
+model GradeScale {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  school School      @relation(fields: [schoolId], references: [id])
+  ranges GradeRange[]
+
+  @@unique([schoolId, name])
+}
+
+model GradeRange {
+  id           String  @id @default(uuid())
+  gradeScaleId String
+  minScore     Decimal @db.Decimal(6, 2)
+  maxScore     Decimal @db.Decimal(6, 2)
+  grade        String
+  remark       String?
+  points       Decimal? @db.Decimal(6, 2)
+
+  gradeScale GradeScale @relation(fields: [gradeScaleId], references: [id])
+}
+
+model Invoice {
+  id        String   @id @default(uuid())
+  schoolId  String
+  studentId String
+  number    String
+  amount    Decimal  @db.Decimal(12, 2)
+  balance   Decimal  @db.Decimal(12, 2)
+  dueDate   DateTime?
+  createdAt DateTime @default(now())
+
+  school   School    @relation(fields: [schoolId], references: [id])
+  student  Student   @relation(fields: [studentId], references: [id])
+  payments Payment[]
+
+  @@unique([schoolId, number])
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  schoolId    String
+  studentId   String
+  invoiceId   String?
+  amount      Decimal  @db.Decimal(12, 2)
+  method      String
+  reference   String?
+  receivedAt  DateTime @default(now())
+
+  school  School   @relation(fields: [schoolId], references: [id])
+  student Student  @relation(fields: [studentId], references: [id])
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+}
+
+model Expense {
+  id          String               @id @default(uuid())
+  schoolId    String
+  title       String
+  amount      Decimal              @db.Decimal(12, 2)
+  status      FinanceRequestStatus @default(DRAFT)
+  description String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  schoolId  String?
+  userId    String?
+  action    String
+  module    String
+  oldValue  Json?
+  newValue  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  school School? @relation(fields: [schoolId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
+}
