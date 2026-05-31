@@ -75,6 +75,43 @@ enum ReportType {
   FINANCE_SUMMARY
 }
 
+enum LeaveStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum ProcurementStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  ORDERED
+  RECEIVED
+}
+
+enum BorrowingStatus {
+  BORROWED
+  RETURNED
+  OVERDUE
+  LOST
+}
+
+enum IntegrationStatus {
+  PENDING
+  SENT
+  SYNCED
+  FAILED
+}
+
+enum AiJobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 model SubscriptionPackage {
   id          String   @id @default(uuid())
   name        String   @unique
@@ -100,36 +137,60 @@ model School {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  subscriptions      SchoolSubscription[]
-  settings           SchoolSetting[]
-  users              User[]
-  departments        Department[]
-  academicYears      AcademicYear[]
-  students           Student[]
-  guardians          Guardian[]
-  classes            Class[]
-  streams            Stream[]
-  subjects           Subject[]
-  teacherClasses     TeacherClassAssignment[]
-  teacherSubjects    TeacherSubjectAssignment[]
-  exams              Exam[]
-  examSubjects       ExamSubject[]
-  examSchedules      ExamSchedule[]
-  marks              Mark[]
-  gradeScales        GradeScale[]
-  approvals          AcademicApproval[]
-  approvalComments   ApprovalComment[]
-  studentAttendance  StudentAttendance[]
-  staffAttendance    StaffAttendance[]
-  feeStructures      FeeStructure[]
-  invoices           Invoice[]
-  invoiceItems       InvoiceItem[]
-  payments           Payment[]
-  paymentAllocations PaymentAllocation[]
-  receipts           Receipt[]
-  expenses           Expense[]
-  reportSnapshots    ReportSnapshot[]
-  auditLogs          AuditLog[]
+  subscriptions          SchoolSubscription[]
+  settings               SchoolSetting[]
+  users                  User[]
+  departments            Department[]
+  academicYears          AcademicYear[]
+  students               Student[]
+  guardians              Guardian[]
+  classes                Class[]
+  streams                Stream[]
+  subjects               Subject[]
+  teacherClasses         TeacherClassAssignment[]
+  teacherSubjects        TeacherSubjectAssignment[]
+  exams                  Exam[]
+  examSubjects           ExamSubject[]
+  examSchedules          ExamSchedule[]
+  marks                  Mark[]
+  gradeScales            GradeScale[]
+  approvals              AcademicApproval[]
+  approvalComments       ApprovalComment[]
+  studentAttendance      StudentAttendance[]
+  staffAttendance        StaffAttendance[]
+  feeStructures          FeeStructure[]
+  invoices               Invoice[]
+  invoiceItems           InvoiceItem[]
+  payments               Payment[]
+  paymentAllocations     PaymentAllocation[]
+  receipts               Receipt[]
+  expenses               Expense[]
+  reportSnapshots        ReportSnapshot[]
+  learningAreas          LearningArea[]
+  learnerCompetencies    LearnerCompetency[]
+  courses                Course[]
+  employees              Employee[]
+  inventoryItems         InventoryItem[]
+  assets                 AssetRegister[]
+  suppliers              Supplier[]
+  purchaseRequests       PurchaseRequest[]
+  books                  LibraryBook[]
+  dormitories            Dormitory[]
+  vehicles               Vehicle[]
+  routes                 TransportRoute[]
+  smsLogs                SmsLog[]
+  emailLogs              EmailLog[]
+  messageTemplates       MessageTemplate[]
+  analyticsSnapshots     AnalyticsSnapshot[]
+  governmentSubmissions  GovernmentSubmission[]
+  nationalExamCandidates NationalExamCandidate[]
+  countryConfigs         CountryConfig[]
+  aiJobs                 AiJob[]
+  auditLogs              AuditLog[]
+  purchaseOrders         PurchaseOrder[]
+  leaveOuts              LeaveOut[]
+  boardingIncidents      BoardingIncident[]
+  drivers                Driver[]
 }
 
 model SchoolSetting {
@@ -182,6 +243,10 @@ model User {
   createdApprovals   AcademicApproval[]         @relation("AcademicApprovalActor")
   approvalComments   ApprovalComment[]          @relation("ApprovalCommentAuthor")
   staffAttendance    StaffAttendance[]          @relation("StaffAttendanceUser")
+  employees          Employee[]
+  leaveRequests      LeaveRequest[]
+  assetAssignments   AssetAssignment[]
+  aiJobs             AiJob[]
   auditLogs          AuditLog[]
 }
 
@@ -288,13 +353,14 @@ model Term {
 }
 
 model Curriculum {
-  id          String            @id @default(uuid())
-  type        CurriculumType
-  name        String
-  country     String?
-  description String?
-  levels      CurriculumLevel[]
-  subjects    Subject[]
+  id            String            @id @default(uuid())
+  type          CurriculumType
+  name          String
+  country       String?
+  description   String?
+  levels        CurriculumLevel[]
+  learningAreas LearningArea[]
+  subjects      Subject[]
 }
 
 model CurriculumLevel {
@@ -304,6 +370,65 @@ model CurriculumLevel {
   sequence     Int
 
   curriculum Curriculum @relation(fields: [curriculumId], references: [id])
+}
+
+model LearningArea {
+  id           String   @id @default(uuid())
+  schoolId     String
+  curriculumId String?
+  name         String
+  code         String?
+  createdAt    DateTime @default(now())
+
+  school     School      @relation(fields: [schoolId], references: [id])
+  curriculum Curriculum? @relation(fields: [curriculumId], references: [id])
+  strands    Strand[]
+
+  @@unique([schoolId, name])
+}
+
+model Strand {
+  id             String @id @default(uuid())
+  learningAreaId String
+  name           String
+  sequence       Int    @default(0)
+
+  learningArea LearningArea @relation(fields: [learningAreaId], references: [id])
+  subStrands   SubStrand[]
+}
+
+model SubStrand {
+  id       String @id @default(uuid())
+  strandId String
+  name     String
+  sequence Int    @default(0)
+
+  strand       Strand       @relation(fields: [strandId], references: [id])
+  competencies Competency[]
+}
+
+model Competency {
+  id          String  @id @default(uuid())
+  subStrandId String
+  code        String?
+  description String
+
+  subStrand SubStrand           @relation(fields: [subStrandId], references: [id])
+  learners  LearnerCompetency[]
+}
+
+model LearnerCompetency {
+  id           String   @id @default(uuid())
+  schoolId     String
+  studentId    String
+  competencyId String
+  level        String
+  evidence     String?
+  assessedAt   DateTime @default(now())
+
+  school     School     @relation(fields: [schoolId], references: [id])
+  student    Student    @relation(fields: [studentId], references: [id])
+  competency Competency @relation(fields: [competencyId], references: [id])
 }
 
 model Class {
@@ -399,17 +524,23 @@ model Student {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  school         School                 @relation(fields: [schoolId], references: [id])
-  class          Class?                 @relation(fields: [classId], references: [id])
-  stream         Stream?                @relation(fields: [streamId], references: [id])
-  guardians      StudentGuardian[]
-  documents      StudentDocument[]
-  medicalRecords StudentMedicalRecord[]
-  transfers      StudentTransfer[]
-  attendance     StudentAttendance[]
-  marks          Mark[]
-  invoices       Invoice[]
-  payments       Payment[]
+  school                School                       @relation(fields: [schoolId], references: [id])
+  class                 Class?                       @relation(fields: [classId], references: [id])
+  stream                Stream?                      @relation(fields: [streamId], references: [id])
+  guardians             StudentGuardian[]
+  documents             StudentDocument[]
+  medicalRecords        StudentMedicalRecord[]
+  transfers             StudentTransfer[]
+  attendance            StudentAttendance[]
+  marks                 Mark[]
+  invoices              Invoice[]
+  payments              Payment[]
+  learnerCompetencies   LearnerCompetency[]
+  assignmentSubmissions AssignmentSubmission[]
+  quizAttempts          QuizAttempt[]
+  transportAssignments  StudentTransportAssignment[]
+  bedAllocations        BedAllocation[]
+  borrowings            LibraryBorrowing[]
 
   @@unique([schoolId, admissionNumber])
 }
@@ -751,6 +882,542 @@ model ReportSnapshot {
   createdAt DateTime   @default(now())
 
   school School @relation(fields: [schoolId], references: [id])
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  schoolId    String
+  title       String
+  description String?
+  subjectId   String?
+  teacherId   String?
+  createdAt   DateTime @default(now())
+
+  school      School       @relation(fields: [schoolId], references: [id])
+  lessons     Lesson[]
+  assignments Assignment[]
+  quizzes     Quiz[]
+}
+
+model Lesson {
+  id        String   @id @default(uuid())
+  courseId  String
+  title     String
+  content   String?
+  fileUrl   String?
+  sequence  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id])
+}
+
+model Assignment {
+  id           String    @id @default(uuid())
+  courseId     String
+  title        String
+  instructions String?
+  dueAt        DateTime?
+  createdAt    DateTime  @default(now())
+
+  course      Course                 @relation(fields: [courseId], references: [id])
+  submissions AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id           String   @id @default(uuid())
+  assignmentId String
+  studentId    String
+  content      String?
+  fileUrl      String?
+  score        Decimal? @db.Decimal(6, 2)
+  submittedAt  DateTime @default(now())
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  student    Student    @relation(fields: [studentId], references: [id])
+}
+
+model Quiz {
+  id        String   @id @default(uuid())
+  courseId  String
+  title     String
+  questions Json
+  createdAt DateTime @default(now())
+
+  course   Course        @relation(fields: [courseId], references: [id])
+  attempts QuizAttempt[]
+}
+
+model QuizAttempt {
+  id        String   @id @default(uuid())
+  quizId    String
+  studentId String
+  answers   Json
+  score     Decimal? @db.Decimal(6, 2)
+  createdAt DateTime @default(now())
+
+  quiz    Quiz    @relation(fields: [quizId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+}
+
+model Employee {
+  id          String   @id @default(uuid())
+  schoolId    String
+  userId      String?
+  staffNumber String
+  firstName   String
+  lastName    String
+  department  String?
+  jobTitle    String?
+  createdAt   DateTime @default(now())
+
+  school    School              @relation(fields: [schoolId], references: [id])
+  user      User?               @relation(fields: [userId], references: [id])
+  contracts Contract[]
+  leave     LeaveRequest[]
+  payroll   Payroll[]
+  reviews   PerformanceReview[]
+
+  @@unique([schoolId, staffNumber])
+}
+
+model Contract {
+  id         String    @id @default(uuid())
+  employeeId String
+  type       String
+  startsAt   DateTime
+  endsAt     DateTime?
+  salary     Decimal?  @db.Decimal(12, 2)
+  fileUrl    String?
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
+
+model LeaveRequest {
+  id         String      @id @default(uuid())
+  employeeId String
+  userId     String?
+  type       String
+  startsAt   DateTime
+  endsAt     DateTime
+  status     LeaveStatus @default(DRAFT)
+  reason     String?
+  createdAt  DateTime    @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+  user     User?    @relation(fields: [userId], references: [id])
+}
+
+model Payroll {
+  id          String    @id @default(uuid())
+  employeeId  String
+  period      String
+  grossAmount Decimal   @db.Decimal(12, 2)
+  deductions  Decimal   @default(0) @db.Decimal(12, 2)
+  netAmount   Decimal   @db.Decimal(12, 2)
+  paidAt      DateTime?
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
+
+model PerformanceReview {
+  id         String   @id @default(uuid())
+  employeeId String
+  period     String
+  score      Decimal? @db.Decimal(6, 2)
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
+
+model InventoryItem {
+  id           String   @id @default(uuid())
+  schoolId     String
+  name         String
+  sku          String?
+  quantity     Int      @default(0)
+  reorderLevel Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  school    School          @relation(fields: [schoolId], references: [id])
+  movements StockMovement[]
+}
+
+model StockMovement {
+  id        String   @id @default(uuid())
+  itemId    String
+  type      String
+  quantity  Int
+  reason    String?
+  createdAt DateTime @default(now())
+
+  item InventoryItem @relation(fields: [itemId], references: [id])
+}
+
+model AssetRegister {
+  id        String   @id @default(uuid())
+  schoolId  String
+  tagNumber String
+  name      String
+  category  String?
+  condition String?
+  location  String?
+  createdAt DateTime @default(now())
+
+  school      School            @relation(fields: [schoolId], references: [id])
+  assignments AssetAssignment[]
+
+  @@unique([schoolId, tagNumber])
+}
+
+model AssetAssignment {
+  id         String    @id @default(uuid())
+  assetId    String
+  userId     String?
+  location   String?
+  assignedAt DateTime  @default(now())
+  returnedAt DateTime?
+
+  asset AssetRegister @relation(fields: [assetId], references: [id])
+  user  User?         @relation(fields: [userId], references: [id])
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+
+  school     School          @relation(fields: [schoolId], references: [id])
+  quotations Quotation[]
+  orders     PurchaseOrder[]
+}
+
+model PurchaseRequest {
+  id          String            @id @default(uuid())
+  schoolId    String
+  title       String
+  description String?
+  amount      Decimal?          @db.Decimal(12, 2)
+  status      ProcurementStatus @default(DRAFT)
+  createdAt   DateTime          @default(now())
+
+  school     School          @relation(fields: [schoolId], references: [id])
+  quotations Quotation[]
+  orders     PurchaseOrder[]
+}
+
+model Quotation {
+  id                String   @id @default(uuid())
+  purchaseRequestId String
+  supplierId        String
+  amount            Decimal  @db.Decimal(12, 2)
+  fileUrl           String?
+  createdAt         DateTime @default(now())
+
+  request  PurchaseRequest @relation(fields: [purchaseRequestId], references: [id])
+  supplier Supplier        @relation(fields: [supplierId], references: [id])
+}
+
+model PurchaseOrder {
+  id                String            @id @default(uuid())
+  schoolId          String
+  purchaseRequestId String
+  supplierId        String
+  number            String
+  status            ProcurementStatus @default(ORDERED)
+  createdAt         DateTime          @default(now())
+
+  school   School              @relation(fields: [schoolId], references: [id])
+  request  PurchaseRequest     @relation(fields: [purchaseRequestId], references: [id])
+  supplier Supplier            @relation(fields: [supplierId], references: [id])
+  receipts GoodsReceivedNote[]
+
+  @@unique([schoolId, number])
+}
+
+model GoodsReceivedNote {
+  id              String   @id @default(uuid())
+  purchaseOrderId String
+  notes           String?
+  receivedAt      DateTime @default(now())
+
+  order PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+}
+
+model LibraryBook {
+  id        String   @id @default(uuid())
+  schoolId  String
+  isbn      String?
+  title     String
+  author    String?
+  copies    Int      @default(1)
+  createdAt DateTime @default(now())
+
+  school     School             @relation(fields: [schoolId], references: [id])
+  borrowings LibraryBorrowing[]
+}
+
+model LibraryBorrowing {
+  id         String          @id @default(uuid())
+  bookId     String
+  studentId  String
+  borrowedAt DateTime        @default(now())
+  dueAt      DateTime?
+  returnedAt DateTime?
+  status     BorrowingStatus @default(BORROWED)
+
+  book    LibraryBook   @relation(fields: [bookId], references: [id])
+  student Student       @relation(fields: [studentId], references: [id])
+  fines   LibraryFine[]
+}
+
+model LibraryFine {
+  id          String  @id @default(uuid())
+  borrowingId String
+  amount      Decimal @db.Decimal(12, 2)
+  paid        Boolean @default(false)
+
+  borrowing LibraryBorrowing @relation(fields: [borrowingId], references: [id])
+}
+
+model Dormitory {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  capacity  Int?
+  createdAt DateTime @default(now())
+
+  school School         @relation(fields: [schoolId], references: [id])
+  rooms  BoardingRoom[]
+}
+
+model BoardingRoom {
+  id          String @id @default(uuid())
+  dormitoryId String
+  name        String
+  capacity    Int?
+
+  dormitory Dormitory @relation(fields: [dormitoryId], references: [id])
+  beds      Bed[]
+}
+
+model Bed {
+  id     String @id @default(uuid())
+  roomId String
+  label  String
+
+  room        BoardingRoom    @relation(fields: [roomId], references: [id])
+  allocations BedAllocation[]
+}
+
+model BedAllocation {
+  id        String    @id @default(uuid())
+  bedId     String
+  studentId String
+  startsAt  DateTime  @default(now())
+  endsAt    DateTime?
+
+  bed     Bed     @relation(fields: [bedId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+}
+
+model LeaveOut {
+  id        String   @id @default(uuid())
+  schoolId  String
+  studentId String
+  reason    String?
+  startsAt  DateTime
+  endsAt    DateTime
+  approved  Boolean  @default(false)
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model BoardingIncident {
+  id        String   @id @default(uuid())
+  schoolId  String
+  studentId String?
+  title     String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model Vehicle {
+  id        String   @id @default(uuid())
+  schoolId  String
+  plate     String
+  make      String?
+  capacity  Int?
+  createdAt DateTime @default(now())
+
+  school      School                     @relation(fields: [schoolId], references: [id])
+  fuelLogs    FuelLog[]
+  maintenance VehicleMaintenanceRecord[]
+
+  @@unique([schoolId, plate])
+}
+
+model Driver {
+  id        String  @id @default(uuid())
+  schoolId  String
+  name      String
+  phone     String?
+  licenseNo String?
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model TransportRoute {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  createdAt DateTime @default(now())
+
+  school       School                       @relation(fields: [schoolId], references: [id])
+  pickupPoints PickupPoint[]
+  assignments  StudentTransportAssignment[]
+}
+
+model PickupPoint {
+  id       String @id @default(uuid())
+  routeId  String
+  name     String
+  sequence Int    @default(0)
+
+  route TransportRoute @relation(fields: [routeId], references: [id])
+}
+
+model StudentTransportAssignment {
+  id        String    @id @default(uuid())
+  routeId   String
+  studentId String
+  startsAt  DateTime  @default(now())
+  endsAt    DateTime?
+
+  route   TransportRoute @relation(fields: [routeId], references: [id])
+  student Student        @relation(fields: [studentId], references: [id])
+}
+
+model FuelLog {
+  id        String   @id @default(uuid())
+  vehicleId String
+  liters    Decimal  @db.Decimal(8, 2)
+  cost      Decimal? @db.Decimal(12, 2)
+  loggedAt  DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+}
+
+model VehicleMaintenanceRecord {
+  id        String   @id @default(uuid())
+  vehicleId String
+  title     String
+  cost      Decimal? @db.Decimal(12, 2)
+  doneAt    DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+}
+
+model SmsLog {
+  id        String   @id @default(uuid())
+  schoolId  String
+  recipient String
+  message   String
+  status    String   @default("QUEUED")
+  createdAt DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model EmailLog {
+  id        String   @id @default(uuid())
+  schoolId  String
+  recipient String
+  subject   String
+  body      String
+  status    String   @default("QUEUED")
+  createdAt DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model MessageTemplate {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  channel   String
+  body      String
+  createdAt DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model AnalyticsSnapshot {
+  id        String   @id @default(uuid())
+  schoolId  String
+  metric    String
+  period    String
+  value     Json
+  createdAt DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model GovernmentSubmission {
+  id        String            @id @default(uuid())
+  schoolId  String
+  country   String
+  type      String
+  payload   Json
+  status    IntegrationStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model NationalExamCandidate {
+  id          String            @id @default(uuid())
+  schoolId    String
+  studentId   String
+  examBody    String
+  examYear    Int
+  candidateNo String?
+  status      IntegrationStatus @default(PENDING)
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model CountryConfig {
+  id           String   @id @default(uuid())
+  schoolId     String
+  country      String
+  curriculum   String?
+  gradingRules Json?
+  language     String?
+  smsProvider  String?
+  createdAt    DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model AiJob {
+  id        String      @id @default(uuid())
+  schoolId  String
+  userId    String?
+  type      String
+  input     Json
+  output    Json?
+  status    AiJobStatus @default(QUEUED)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
 }
 
 model AuditLog {
