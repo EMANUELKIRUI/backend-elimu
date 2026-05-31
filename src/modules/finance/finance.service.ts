@@ -19,6 +19,34 @@ export class FinanceService {
     });
   }
 
+  findFeeStructures(user: AuthUser) {
+    const schoolId = this.requireSchool(user);
+    return this.prisma.feeStructure.findMany({
+      where: { schoolId },
+      include: { items: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  createFeeStructure(user: AuthUser, body: any) {
+    const schoolId = this.requireSchool(user);
+    return this.prisma.feeStructure.create({
+      data: {
+        schoolId,
+        name: body.name,
+        classId: body.classId,
+        termId: body.termId,
+        items: {
+          create: (body.items ?? []).map((item) => ({
+            name: item.name,
+            amount: item.amount,
+          })),
+        },
+      },
+      include: { items: true },
+    });
+  }
+
   async createInvoice(user: AuthUser, dto: CreateInvoiceDto) {
     const schoolId = this.requireSchool(user);
     await this.prisma.student.findFirstOrThrow({
@@ -86,6 +114,15 @@ export class FinanceService {
       }
 
       return payment;
+    });
+  }
+
+  findReceipts(user: AuthUser) {
+    const schoolId = this.requireSchool(user);
+    return this.prisma.receipt.findMany({
+      where: { schoolId },
+      include: { payment: true, invoice: true },
+      orderBy: { issuedAt: 'desc' },
     });
   }
 

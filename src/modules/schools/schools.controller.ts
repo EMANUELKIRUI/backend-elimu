@@ -20,4 +20,28 @@ export class SchoolsController {
   getCurrentSchool(@CurrentUser() user: AuthUser) {
     return this.schoolsService.findOneForUser(user);
   }
+
+  @Post('settings')
+  @Permissions('schools.configure')
+  upsertSetting(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.schoolsService.upsertSetting(user, body);
+  }
+
+  @Post('academic-years')
+  @Permissions('schools.configure')
+  createAcademicYear(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.schoolsService.createAcademicYear(user, body);
+  }
+
+  @Post('terms')
+  @Permissions('schools.configure')
+  createTerm(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.schoolsService.createTerm(user, body);
+  }
+
+  @Post('departments')
+  @Permissions('schools.configure')
+  createDepartment(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.schoolsService.createDepartment(user, body);
+  }
 }

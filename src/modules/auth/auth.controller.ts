@@ -5,6 +5,9 @@ import { AuthUser } from '../../common/types/auth-user';
 import { AuthService } from './auth.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyMfaDto } from './dto/verify-mfa.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -24,5 +27,32 @@ export class AuthController {
   @Post('change-password')
   changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
     return this.authService.changePassword(user, dto);
+  }
+
+  @Public()
+  @Post('password-reset/request')
+  requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
+    return this.authService.requestPasswordReset(dto);
+  }
+
+  @Public()
+  @Post('password-reset/confirm')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
+  }
+
+  @Post('mfa/start')
+  startMfa(@CurrentUser() user: AuthUser) {
+    return this.authService.startMfa(user);
+  }
+
+  @Post('mfa/verify')
+  verifyMfa(@CurrentUser() user: AuthUser, @Body() dto: VerifyMfaDto) {
+    return this.authService.verifyMfa(user, dto);
+  }
+
+  @Post('sessions')
+  sessions(@CurrentUser() user: AuthUser) {
+    return this.authService.sessions(user);
   }
 }

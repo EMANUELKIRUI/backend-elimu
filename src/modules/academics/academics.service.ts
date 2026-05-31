@@ -29,6 +29,36 @@ export class AcademicsService {
     return this.prisma.class.create({ data: { schoolId, ...dto } });
   }
 
+  async createStream(user: AuthUser, classId: string, body: any) {
+    const schoolId = this.requireSchool(user);
+    await this.prisma.class.findFirstOrThrow({ where: { id: classId, schoolId } });
+
+    return this.prisma.stream.create({
+      data: {
+        schoolId,
+        classId,
+        name: body.name,
+      },
+    });
+  }
+
+  async assignClassTeacher(user: AuthUser, classId: string, body: any) {
+    const schoolId = this.requireSchool(user);
+    await this.prisma.class.findFirstOrThrow({ where: { id: classId, schoolId } });
+    await this.prisma.user.findFirstOrThrow({ where: { id: body.teacherId, schoolId } });
+
+    return this.prisma.teacherClassAssignment.upsert({
+      where: { teacherId_classId: { teacherId: body.teacherId, classId } },
+      update: { endsAt: body.endsAt ? new Date(body.endsAt) : undefined },
+      create: {
+        schoolId,
+        classId,
+        teacherId: body.teacherId,
+        startsAt: body.startsAt ? new Date(body.startsAt) : undefined,
+      },
+    });
+  }
+
   findSubjects(user: AuthUser) {
     const schoolId = this.requireSchool(user);
     return this.prisma.subject.findMany({
@@ -50,6 +80,25 @@ export class AcademicsService {
     });
   }
 
+  async assignSubjectTeacher(user: AuthUser, subjectId: string, body: any) {
+    const schoolId = this.requireSchool(user);
+    await this.prisma.subject.findFirstOrThrow({ where: { id: subjectId, schoolId } });
+    await this.prisma.user.findFirstOrThrow({ where: { id: body.teacherId, schoolId } });
+    if (body.classId) {
+      await this.prisma.class.findFirstOrThrow({ where: { id: body.classId, schoolId } });
+    }
+
+    return this.prisma.teacherSubjectAssignment.create({
+      data: {
+        schoolId,
+        subjectId,
+        teacherId: body.teacherId,
+        classId: body.classId,
+        startsAt: body.startsAt ? new Date(body.startsAt) : undefined,
+      },
+    });
+  }
+
   async createExam(user: AuthUser, dto: CreateExamDto) {
     const schoolId = this.requireSchool(user);
     await this.prisma.academicYear.findFirstOrThrow({
@@ -60,6 +109,48 @@ export class AcademicsService {
     });
 
     return this.prisma.exam.create({ data: { schoolId, ...dto } });
+  }
+
+  async addExamSubject(user: AuthUser, examId: string, body: any) {
+    const schoolId = this.requireSchool(user);
+    await this.prisma.exam.findFirstOrThrow({ where: { id: examId, schoolId } });
+    await this.prisma.subject.findFirstOrThrow({
+      where: { id: body.subjectId, schoolId },
+    });
+
+    return this.prisma.examSubject.upsert({
+      where: { examId_subjectId: { examId, subjectId: body.subjectId } },
+      update: {
+        weight: body.weight,
+        maxMarks: body.maxMarks,
+      },
+      create: {
+        schoolId,
+        examId,
+        subjectId: body.subjectId,
+        weight: body.weight ?? 1,
+        maxMarks: body.maxMarks,
+      },
+    });
+  }
+
+  async scheduleExam(user: AuthUser, examId: string, body: any) {
+    const schoolId = this.requireSchool(user);
+    await this.prisma.exam.findFirstOrThrow({ where: { id: examId, schoolId } });
+    await this.prisma.subject.findFirstOrThrow({
+      where: { id: body.subjectId, schoolId },
+    });
+
+    return this.prisma.examSchedule.create({
+      data: {
+        schoolId,
+        examId,
+        subjectId: body.subjectId,
+        startsAt: new Date(body.startsAt),
+        endsAt: new Date(body.endsAt),
+        room: body.room,
+      },
+    });
   }
 
   async enterMark(user: AuthUser, dto: EnterMarkDto) {

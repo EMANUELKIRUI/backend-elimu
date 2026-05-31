@@ -112,6 +112,13 @@ enum AiJobStatus {
   FAILED
 }
 
+enum DataJobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
 model SubscriptionPackage {
   id          String   @id @default(uuid())
   name        String   @unique
@@ -182,9 +189,22 @@ model School {
   emailLogs              EmailLog[]
   messageTemplates       MessageTemplate[]
   analyticsSnapshots     AnalyticsSnapshot[]
+  analyticsDashboards    AnalyticsDashboard[]
+  mobileDevices          MobileDevice[]
+  pushNotifications      PushNotification[]
   governmentSubmissions  GovernmentSubmission[]
   nationalExamCandidates NationalExamCandidate[]
+  integrationEndpoints   IntegrationEndpoint[]
+  integrationSyncLogs    IntegrationSyncLog[]
   countryConfigs         CountryConfig[]
+  ministryProfiles       MinistryProfile[]
+  complianceReports      ComplianceReport[]
+  dataExportJobs         DataExportJob[]
+  dataRetentionPolicies  DataRetentionPolicy[]
+  consentRecords         ConsentRecord[]
+  anonymizedMetrics      AnonymizedEducationMetric[]
+  intelligenceReports    EducationIntelligenceReport[]
+  backupJobs             BackupJob[]
   aiJobs                 AiJob[]
   auditLogs              AuditLog[]
   purchaseOrders         PurchaseOrder[]
@@ -231,23 +251,67 @@ model User {
   lastName     String
   status       UserStatus @default(ACTIVE)
   refreshHash  String?
+  mfaEnabled   Boolean    @default(false)
+  mfaSecret    String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  school             School?                    @relation(fields: [schoolId], references: [id])
-  roles              UserRole[]
-  departments        DepartmentMember[]
-  classAssignments   TeacherClassAssignment[]   @relation("TeacherClassAssignments")
-  subjectAssignments TeacherSubjectAssignment[] @relation("TeacherSubjectAssignments")
-  marks              Mark[]                     @relation("MarkCreatedBy")
-  createdApprovals   AcademicApproval[]         @relation("AcademicApprovalActor")
-  approvalComments   ApprovalComment[]          @relation("ApprovalCommentAuthor")
-  staffAttendance    StaffAttendance[]          @relation("StaffAttendanceUser")
-  employees          Employee[]
-  leaveRequests      LeaveRequest[]
-  assetAssignments   AssetAssignment[]
-  aiJobs             AiJob[]
-  auditLogs          AuditLog[]
+  school              School?                    @relation(fields: [schoolId], references: [id])
+  sessions            UserSession[]
+  passwordResetTokens PasswordResetToken[]
+  mfaChallenges       MfaChallenge[]
+  roles               UserRole[]
+  departments         DepartmentMember[]
+  classAssignments    TeacherClassAssignment[]   @relation("TeacherClassAssignments")
+  subjectAssignments  TeacherSubjectAssignment[] @relation("TeacherSubjectAssignments")
+  marks               Mark[]                     @relation("MarkCreatedBy")
+  createdApprovals    AcademicApproval[]         @relation("AcademicApprovalActor")
+  approvalComments    ApprovalComment[]          @relation("ApprovalCommentAuthor")
+  staffAttendance     StaffAttendance[]          @relation("StaffAttendanceUser")
+  employees           Employee[]
+  leaveRequests       LeaveRequest[]
+  assetAssignments    AssetAssignment[]
+  aiJobs              AiJob[]
+  mobileDevices       MobileDevice[]
+  pushNotifications   PushNotification[]
+  dataExportJobs      DataExportJob[]
+  complianceReports   ComplianceReport[]
+  auditLogs           AuditLog[]
+}
+
+model UserSession {
+  id          String    @id @default(uuid())
+  userId      String
+  refreshHash String
+  ipAddress   String?
+  userAgent   String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model MfaChallenge {
+  id         String    @id @default(uuid())
+  userId     String
+  codeHash   String
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Role {
@@ -1368,6 +1432,49 @@ model AnalyticsSnapshot {
   school School @relation(fields: [schoolId], references: [id])
 }
 
+model AnalyticsDashboard {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  widgets   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@unique([schoolId, name])
+}
+
+model MobileDevice {
+  id         String   @id @default(uuid())
+  schoolId   String
+  userId     String
+  platform   String
+  token      String
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([platform, token])
+}
+
+model PushNotification {
+  id        String    @id @default(uuid())
+  schoolId  String
+  userId    String?
+  title     String
+  body      String
+  data      Json?
+  status    String    @default("QUEUED")
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
+
+  school School @relation(fields: [schoolId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+}
+
 model GovernmentSubmission {
   id        String            @id @default(uuid())
   schoolId  String
@@ -1390,6 +1497,152 @@ model NationalExamCandidate {
   status      IntegrationStatus @default(PENDING)
 
   school School @relation(fields: [schoolId], references: [id])
+}
+
+model IntegrationEndpoint {
+  id        String   @id @default(uuid())
+  schoolId  String
+  country   String
+  provider  String
+  type      String
+  baseUrl   String?
+  config    Json?
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school   School               @relation(fields: [schoolId], references: [id])
+  syncLogs IntegrationSyncLog[]
+}
+
+model IntegrationSyncLog {
+  id         String            @id @default(uuid())
+  schoolId   String
+  endpointId String?
+  type       String
+  request    Json?
+  response   Json?
+  status     IntegrationStatus @default(PENDING)
+  error      String?
+  createdAt  DateTime          @default(now())
+
+  school   School               @relation(fields: [schoolId], references: [id])
+  endpoint IntegrationEndpoint? @relation(fields: [endpointId], references: [id])
+}
+
+model MinistryProfile {
+  id                 String   @id @default(uuid())
+  schoolId           String
+  country            String
+  ministrySchoolCode String?
+  registrationNumber String?
+  complianceMetadata Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@unique([schoolId, country])
+}
+
+model ComplianceReport {
+  id          String        @id @default(uuid())
+  schoolId    String
+  createdById String?
+  country     String
+  type        String
+  period      String
+  payload     Json
+  status      DataJobStatus @default(QUEUED)
+  fileUrl     String?
+  createdAt   DateTime      @default(now())
+  completedAt DateTime?
+
+  school    School @relation(fields: [schoolId], references: [id])
+  createdBy User?  @relation(fields: [createdById], references: [id])
+}
+
+model DataExportJob {
+  id            String        @id @default(uuid())
+  schoolId      String
+  requestedById String?
+  type          String
+  format        String
+  filters       Json?
+  status        DataJobStatus @default(QUEUED)
+  fileUrl       String?
+  createdAt     DateTime      @default(now())
+  completedAt   DateTime?
+
+  school      School @relation(fields: [schoolId], references: [id])
+  requestedBy User?  @relation(fields: [requestedById], references: [id])
+}
+
+model DataRetentionPolicy {
+  id                 String   @id @default(uuid())
+  schoolId           String
+  dataDomain         String
+  retentionDays      Int
+  anonymizeAfterDays Int?
+  enabled            Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@unique([schoolId, dataDomain])
+}
+
+model ConsentRecord {
+  id          String    @id @default(uuid())
+  schoolId    String
+  subjectType String
+  subjectId   String
+  purpose     String
+  granted     Boolean
+  source      String?
+  recordedAt  DateTime  @default(now())
+  expiresAt   DateTime?
+
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model AnonymizedEducationMetric {
+  id        String   @id @default(uuid())
+  schoolId  String?
+  country   String
+  region    String?
+  metric    String
+  period    String
+  value     Json
+  createdAt DateTime @default(now())
+
+  school School? @relation(fields: [schoolId], references: [id])
+}
+
+model EducationIntelligenceReport {
+  id        String   @id @default(uuid())
+  schoolId  String?
+  country   String?
+  title     String
+  scope     String
+  payload   Json
+  createdAt DateTime @default(now())
+
+  school School? @relation(fields: [schoolId], references: [id])
+}
+
+model BackupJob {
+  id          String        @id @default(uuid())
+  schoolId    String?
+  scope       String
+  status      DataJobStatus @default(QUEUED)
+  storageUrl  String?
+  error       String?
+  createdAt   DateTime      @default(now())
+  completedAt DateTime?
+
+  school School? @relation(fields: [schoolId], references: [id])
 }
 
 model CountryConfig {

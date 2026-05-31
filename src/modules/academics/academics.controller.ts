@@ -24,6 +24,26 @@ export class AcademicsController {
     return this.academicsService.createClass(user, dto);
   }
 
+  @Post('classes/:classId/streams')
+  @Permissions('academics.configure')
+  createStream(
+    @CurrentUser() user: AuthUser,
+    @Param('classId') classId: string,
+    @Body() body: any,
+  ) {
+    return this.academicsService.createStream(user, classId, body);
+  }
+
+  @Post('classes/:classId/teachers')
+  @Permissions('academics.configure')
+  assignClassTeacher(
+    @CurrentUser() user: AuthUser,
+    @Param('classId') classId: string,
+    @Body() body: any,
+  ) {
+    return this.academicsService.assignClassTeacher(user, classId, body);
+  }
+
   @Get('subjects')
   @Permissions('academics.view')
   findSubjects(@CurrentUser() user: AuthUser) {
@@ -36,10 +56,40 @@ export class AcademicsController {
     return this.academicsService.createSubject(user, dto);
   }
 
+  @Post('subjects/:subjectId/teachers')
+  @Permissions('academics.configure')
+  assignSubjectTeacher(
+    @CurrentUser() user: AuthUser,
+    @Param('subjectId') subjectId: string,
+    @Body() body: any,
+  ) {
+    return this.academicsService.assignSubjectTeacher(user, subjectId, body);
+  }
+
   @Post('exams')
   @Permissions('exams.create')
   createExam(@CurrentUser() user: AuthUser, @Body() dto: CreateExamDto) {
     return this.academicsService.createExam(user, dto);
+  }
+
+  @Post('exams/:examId/subjects')
+  @Permissions('exams.create')
+  addExamSubject(
+    @CurrentUser() user: AuthUser,
+    @Param('examId') examId: string,
+    @Body() body: any,
+  ) {
+    return this.academicsService.addExamSubject(user, examId, body);
+  }
+
+  @Post('exams/:examId/schedules')
+  @Permissions('exams.create')
+  scheduleExam(
+    @CurrentUser() user: AuthUser,
+    @Param('examId') examId: string,
+    @Body() body: any,
+  ) {
+    return this.academicsService.scheduleExam(user, examId, body);
   }
 
   @Post('marks')

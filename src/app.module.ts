@@ -9,6 +9,8 @@ import { EnterpriseModule } from './modules/enterprise/enterprise.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { OperationsModule } from './modules/operations/operations.module';
+import { PanAfricaModule } from './modules/pan-africa/pan-africa.module';
 import { PlatformModule } from './modules/platform/platform.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -36,6 +38,8 @@ import { StudentsModule } from './modules/students/students.module';
     CommunicationModule,
     ReportsModule,
     EnterpriseModule,
+    OperationsModule,
+    PanAfricaModule,
     HealthModule,
   ],
 })

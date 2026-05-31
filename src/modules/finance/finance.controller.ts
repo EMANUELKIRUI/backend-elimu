@@ -17,6 +17,24 @@ export class FinanceController {
     return this.financeService.findInvoices(user);
   }
 
+  @Get('fee-structures')
+  @Permissions('finance.view')
+  findFeeStructures(@CurrentUser() user: AuthUser) {
+    return this.financeService.findFeeStructures(user);
+  }
+
+  @Post('fee-structures')
+  @Permissions('finance.create')
+  createFeeStructure(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.financeService.createFeeStructure(user, body);
+  }
+
+  @Get('receipts')
+  @Permissions('finance.view')
+  findReceipts(@CurrentUser() user: AuthUser) {
+    return this.financeService.findReceipts(user);
+  }
+
   @Post('invoices')
   @Permissions('finance.create')
   createInvoice(@CurrentUser() user: AuthUser, @Body() dto: CreateInvoiceDto) {
