@@ -16,6 +16,20 @@ import { PrismaModule } from './modules/prisma/prisma.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { SchoolsModule } from './modules/schools/schools.module';
 import { StudentsModule } from './modules/students/students.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
+import { OrganizationsModule } from './modules/organizations/organizations.module';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { UsersModule } from './modules/users/users.module';
+import { RolesModule } from './modules/roles/roles.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { DocumentsModule } from './modules/documents/documents.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { SearchModule } from './modules/search/search.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { WorkflowsModule } from './modules/workflows/workflows.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -30,6 +44,20 @@ import { StudentsModule } from './modules/students/students.module';
     AuthModule,
     IdentityModule,
     PlatformModule,
+    TenantsModule,
+    OrganizationsModule,
+    SubscriptionsModule,
+    UsersModule,
+    RolesModule,
+    PermissionsModule,
+    AuditModule,
+    DocumentsModule,
+    IntegrationsModule,
+    SearchModule,
+    NotificationsModule,
+    WorkflowsModule,
+    AnalyticsModule,
+    DashboardModule,
     SchoolsModule,
     StudentsModule,
     AcademicsModule,
