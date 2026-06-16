@@ -1,4 +1,4 @@
-import { PrismaClient, CurriculumType } from '@prisma/client';
+import { PrismaClient, CurriculumType, TenantType } from '@prisma/client';
 import { hash } from '@node-rs/argon2';
 
 const prisma = new PrismaClient();
@@ -271,6 +271,50 @@ async function main() {
   const platformRole = await prisma.role.findFirstOrThrow({
     where: { name: 'Platform Admin', schoolId: null },
   });
+
+  await prisma.userRole.upsert({
+    where: {
+      userId_roleId: {
+        userId: platformAdmin.id,
+        roleId: platformRole.id,
+      },
+    },
+    update: {},
+    create: {
+      userId: platformAdmin.id,
+      roleId: platformRole.id,
+    },
+  });
+
+  const ministryTenant = await prisma.tenant.upsert({
+    where: { code: 'MOE' },
+    update: { name: 'Ministry of Education', type: TenantType.MINISTRY, status: 'ACTIVE' },
+    create: {
+      name: 'Ministry of Education',
+      code: 'MOE',
+      type: TenantType.MINISTRY,
+      status: 'ACTIVE',
+    },
+  });
+
+  await prisma.organization.findFirst({
+    where: { tenantId: ministryTenant.id, name: 'Ministry of Education' },
+  })
+    .then((existing) => {
+      if (!existing) {
+        return prisma.organization.create({
+          data: {
+            tenantId: ministryTenant.id,
+            name: 'Ministry of Education',
+            type: TenantType.MINISTRY,
+            status: 'ACTIVE',
+            country: 'Kenya',
+          },
+        });
+      }
+      return existing;
+    })
+    .catch(() => undefined);
 
   await prisma.userRole.upsert({
     where: {

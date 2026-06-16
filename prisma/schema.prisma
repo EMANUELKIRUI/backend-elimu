@@ -21,6 +21,17 @@ enum UserStatus {
   INVITED
 }
 
+enum TenantType {
+  SCHOOL
+  SCHOOL_GROUP
+  UNIVERSITY
+  COUNTY
+  DISTRICT
+  MINISTRY
+  NGO
+  DIOCESE
+}
+
 enum StudentStatus {
   APPLICANT
   ADMITTED
@@ -211,6 +222,40 @@ model School {
   leaveOuts              LeaveOut[]
   boardingIncidents      BoardingIncident[]
   drivers                Driver[]
+}
+
+model Tenant {
+  id        String     @id @default(uuid())
+  name      String
+  code      String     @unique
+  type      TenantType
+  status    String     @default("ACTIVE")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  organizations Organization[]
+}
+
+model Organization {
+  id        String       @id @default(uuid())
+  tenantId  String
+  parentId  String?
+  name      String
+  type      TenantType
+  status    String       @default("ACTIVE")
+  country   String?
+  region    String?
+  county    String?
+  district  String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id])
+  parent   Organization? @relation("OrganizationHierarchy", fields: [parentId], references: [id])
+  children Organization[] @relation("OrganizationHierarchy")
+
+  @@index([tenantId])
+  @@index([parentId])
 }
 
 model SchoolSetting {
