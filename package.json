@@ -5,7 +5,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && node scripts/create-render-entry.js",
     "prebuild": "prisma generate",
     "postinstall": "prisma generate",
     "start": "node --max-old-space-size=512 dist/main.js",

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { AppController } from './app.controller';
 import { AcademicsModule } from './modules/academics/academics.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -70,5 +71,6 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     PanAfricaModule,
     HealthModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
