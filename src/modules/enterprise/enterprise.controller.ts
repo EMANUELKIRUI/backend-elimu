@@ -223,4 +223,160 @@ export class EnterpriseController {
   createAiJob(@CurrentUser() user: AuthUser, @Body() body: any) {
     return this.enterpriseService.create(user, 'aiJobs', body);
   }
+
+  @Get('discipline/cases')
+  @Permissions('discipline.view')
+  disciplineCases(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'disciplineCases');
+  }
+
+  @Post('discipline/cases')
+  @Permissions('discipline.manage')
+  createDisciplineCase(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'disciplineCases', body);
+  }
+
+  @Get('discipline/counseling-notes')
+  @Permissions('discipline.view')
+  counselingNotes(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'counselingNotes');
+  }
+
+  @Post('discipline/counseling-notes')
+  @Permissions('discipline.manage')
+  createCounselingNote(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'counselingNotes', body);
+  }
+
+  @Get('events')
+  @Permissions('events.view')
+  events(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'events');
+  }
+
+  @Post('events')
+  @Permissions('events.manage')
+  createEvent(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'events', body);
+  }
+
+  @Get('events/attendance')
+  @Permissions('events.view')
+  eventAttendances(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'eventAttendances');
+  }
+
+  @Post('events/attendance')
+  @Permissions('events.manage')
+  createEventAttendance(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'eventAttendances', body);
+  }
+
+  @Get('infrastructure/buildings')
+  @Permissions('infrastructure.view')
+  buildings(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'buildings');
+  }
+
+  @Post('infrastructure/buildings')
+  @Permissions('infrastructure.manage')
+  createBuilding(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'buildings', body);
+  }
+
+  @Get('infrastructure/classrooms')
+  @Permissions('infrastructure.view')
+  classrooms(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'classrooms');
+  }
+
+  @Post('infrastructure/classrooms')
+  @Permissions('infrastructure.manage')
+  createClassroom(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'classrooms', body);
+  }
+
+  @Get('infrastructure/facilities')
+  @Permissions('infrastructure.view')
+  facilities(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'facilities');
+  }
+
+  @Post('infrastructure/facilities')
+  @Permissions('infrastructure.manage')
+  createFacility(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'facilities', body);
+  }
+
+  @Get('infrastructure/maintenance-records')
+  @Permissions('infrastructure.view')
+  maintenanceRecords(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'maintenanceRecords');
+  }
+
+  @Post('infrastructure/maintenance-records')
+  @Permissions('infrastructure.manage')
+  createMaintenanceRecord(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'maintenanceRecords', body);
+  }
+
+  @Get('inspections/templates')
+  @Permissions('inspections.view')
+  inspectionTemplates(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'inspectionTemplates');
+  }
+
+  @Post('inspections/templates')
+  @Permissions('inspections.manage')
+  createInspectionTemplate(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'inspectionTemplates', body);
+  }
+
+  @Get('inspections')
+  @Permissions('inspections.view')
+  inspections(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'inspections');
+  }
+
+  @Post('inspections')
+  @Permissions('inspections.manage')
+  createInspection(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'inspections', body);
+  }
+
+  @Get('inspections/compliance-actions')
+  @Permissions('inspections.view')
+  complianceActions(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'complianceActions');
+  }
+
+  @Post('inspections/compliance-actions')
+  @Permissions('inspections.manage')
+  createComplianceAction(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'complianceActions', body);
+  }
+
+  @Get('gis/regions')
+  @Permissions('gis.view')
+  geoRegions(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'geoRegions');
+  }
+
+  @Post('gis/regions')
+  @Permissions('gis.manage')
+  createGeoRegion(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'geoRegions', body);
+  }
+
+  @Get('gis/locations')
+  @Permissions('gis.view')
+  locations(@CurrentUser() user: AuthUser) {
+    return this.enterpriseService.list(user, 'locations');
+  }
+
+  @Post('gis/locations')
+  @Permissions('gis.manage')
+  createLocation(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.enterpriseService.create(user, 'locations', body);
+  }
 }

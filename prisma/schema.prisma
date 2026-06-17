@@ -222,6 +222,21 @@ model School {
   leaveOuts              LeaveOut[]
   boardingIncidents      BoardingIncident[]
   drivers                Driver[]
+  documents              Document[]
+  documentFolders        DocumentFolder[]
+  disciplineCases        DisciplineCase[]
+  counselingNotes        CounselingNote[]
+  events                 SchoolEvent[]
+  eventAttendances       EventAttendance[]
+  buildings              Building[]
+  classrooms             ClassroomFacility[]
+  facilities             Facility[]
+  maintenanceRecords     MaintenanceRecord[]
+  inspections            Inspection[]
+  inspectionTemplates    InspectionTemplate[]
+  complianceActions      ComplianceAction[]
+  geoRegions             GeoRegion[]
+  locations              Location[]
 }
 
 model Tenant {
@@ -1731,4 +1746,307 @@ model AuditLog {
 
   school School? @relation(fields: [schoolId], references: [id])
   user   User?   @relation(fields: [userId], references: [id])
+}
+
+model DocumentFolder {
+  id        String   @id @default(uuid())
+  schoolId  String
+  parentId  String?
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school    School           @relation(fields: [schoolId], references: [id])
+  parent    DocumentFolder?  @relation("DocumentFolderHierarchy", fields: [parentId], references: [id])
+  children  DocumentFolder[] @relation("DocumentFolderHierarchy")
+  documents Document[]
+
+  @@unique([schoolId, parentId, name])
+  @@index([schoolId])
+  @@index([parentId])
+}
+
+model Document {
+  id          String   @id @default(uuid())
+  schoolId    String
+  folderId    String?
+  title       String
+  type        String?
+  storageKey  String
+  fileUrl     String?
+  mimeType    String?
+  sizeBytes   Int?
+  status      String   @default("ACTIVE")
+  metadata    Json?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school      School               @relation(fields: [schoolId], references: [id])
+  folder      DocumentFolder?      @relation(fields: [folderId], references: [id])
+  versions    DocumentVersion[]
+  permissions DocumentPermission[]
+
+  @@index([schoolId])
+  @@index([folderId])
+}
+
+model DocumentVersion {
+  id         String   @id @default(uuid())
+  documentId String
+  version    Int
+  storageKey String
+  fileUrl    String?
+  notes      String?
+  createdById String?
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id])
+
+  @@unique([documentId, version])
+}
+
+model DocumentPermission {
+  id         String   @id @default(uuid())
+  documentId String
+  roleId     String?
+  userId     String?
+  action     String
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id])
+
+  @@index([documentId])
+  @@index([roleId])
+  @@index([userId])
+}
+
+model DisciplineCase {
+  id          String   @id @default(uuid())
+  schoolId    String
+  studentId   String?
+  reportedById String?
+  title       String
+  description String?
+  severity    String?
+  status      String   @default("OPEN")
+  action      String?
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([studentId])
+}
+
+model CounselingNote {
+  id          String   @id @default(uuid())
+  schoolId    String
+  studentId   String
+  counselorId String?
+  summary     String
+  nextSteps   String?
+  confidential Boolean @default(true)
+  recordedAt  DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([studentId])
+}
+
+model SchoolEvent {
+  id          String   @id @default(uuid())
+  schoolId    String
+  title       String
+  type        String
+  description String?
+  venue       String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  status      String   @default("SCHEDULED")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school      School            @relation(fields: [schoolId], references: [id])
+  attendances EventAttendance[]
+
+  @@index([schoolId])
+  @@index([startsAt])
+}
+
+model EventAttendance {
+  id         String   @id @default(uuid())
+  schoolId   String
+  eventId    String
+  attendeeId String
+  attendeeType String
+  status     String   @default("INVITED")
+  checkedInAt DateTime?
+
+  school School      @relation(fields: [schoolId], references: [id])
+  event  SchoolEvent @relation(fields: [eventId], references: [id])
+
+  @@unique([eventId, attendeeType, attendeeId])
+  @@index([schoolId])
+}
+
+model Building {
+  id          String   @id @default(uuid())
+  schoolId    String
+  name        String
+  code        String?
+  condition   String?
+  floors      Int?
+  constructedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  school      School              @relation(fields: [schoolId], references: [id])
+  classrooms  ClassroomFacility[]
+  facilities  Facility[]
+  maintenance MaintenanceRecord[]
+
+  @@unique([schoolId, code])
+}
+
+model ClassroomFacility {
+  id         String   @id @default(uuid())
+  schoolId   String
+  buildingId String?
+  name       String
+  capacity   Int?
+  condition  String?
+  createdAt  DateTime @default(now())
+
+  school   School    @relation(fields: [schoolId], references: [id])
+  building Building? @relation(fields: [buildingId], references: [id])
+
+  @@index([schoolId])
+}
+
+model Facility {
+  id          String   @id @default(uuid())
+  schoolId    String
+  buildingId  String?
+  name        String
+  type        String
+  status      String   @default("OPERATIONAL")
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  school   School    @relation(fields: [schoolId], references: [id])
+  building Building? @relation(fields: [buildingId], references: [id])
+
+  @@index([schoolId])
+}
+
+model MaintenanceRecord {
+  id         String   @id @default(uuid())
+  schoolId   String
+  buildingId String?
+  facilityId String?
+  title      String
+  status     String   @default("OPEN")
+  cost       Decimal? @db.Decimal(12, 2)
+  notes      String?
+  reportedAt DateTime @default(now())
+  resolvedAt DateTime?
+
+  school   School    @relation(fields: [schoolId], references: [id])
+  building Building? @relation(fields: [buildingId], references: [id])
+
+  @@index([schoolId])
+}
+
+model InspectionTemplate {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  criteria  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school      School       @relation(fields: [schoolId], references: [id])
+  inspections Inspection[]
+
+  @@unique([schoolId, name])
+}
+
+model Inspection {
+  id          String   @id @default(uuid())
+  schoolId    String
+  templateId  String?
+  title       String
+  inspector   String?
+  status      String   @default("SCHEDULED")
+  scheduledAt DateTime?
+  completedAt DateTime?
+  findings    Json?
+  score       Decimal? @db.Decimal(6, 2)
+  createdAt   DateTime @default(now())
+
+  school            School             @relation(fields: [schoolId], references: [id])
+  template          InspectionTemplate? @relation(fields: [templateId], references: [id])
+  complianceActions ComplianceAction[]
+
+  @@index([schoolId])
+}
+
+model ComplianceAction {
+  id           String   @id @default(uuid())
+  schoolId     String
+  inspectionId String?
+  title        String
+  owner        String?
+  status       String   @default("OPEN")
+  dueAt        DateTime?
+  closedAt     DateTime?
+  createdAt    DateTime @default(now())
+
+  school     School      @relation(fields: [schoolId], references: [id])
+  inspection Inspection? @relation(fields: [inspectionId], references: [id])
+
+  @@index([schoolId])
+}
+
+model GeoRegion {
+  id        String   @id @default(uuid())
+  schoolId  String
+  parentId  String?
+  name      String
+  type      String
+  code      String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  school    School      @relation(fields: [schoolId], references: [id])
+  parent    GeoRegion?  @relation("GeoRegionHierarchy", fields: [parentId], references: [id])
+  children  GeoRegion[] @relation("GeoRegionHierarchy")
+  locations Location[]
+
+  @@index([schoolId])
+  @@index([parentId])
+}
+
+model Location {
+  id          String   @id @default(uuid())
+  schoolId    String
+  geoRegionId String?
+  entityType  String
+  entityId    String?
+  name        String
+  latitude    Decimal? @db.Decimal(10, 7)
+  longitude   Decimal? @db.Decimal(10, 7)
+  address     String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  school    School     @relation(fields: [schoolId], references: [id])
+  geoRegion GeoRegion? @relation(fields: [geoRegionId], references: [id])
+
+  @@index([schoolId])
+  @@index([geoRegionId])
+  @@index([entityType, entityId])
 }

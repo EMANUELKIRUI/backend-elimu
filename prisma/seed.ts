@@ -47,6 +47,17 @@ const permissions = [
   'transport.manage',
   'inventory.view',
   'discipline.view',
+  'discipline.manage',
+  'events.view',
+  'events.manage',
+  'documents.view',
+  'documents.manage',
+  'infrastructure.view',
+  'infrastructure.manage',
+  'inspections.view',
+  'inspections.manage',
+  'gis.view',
+  'gis.manage',
   'analytics.view',
   'analytics.manage',
   'integrations.view',
@@ -96,6 +107,11 @@ const rolePermissions: Record<string, string[]> = {
     'transport.view',
     'inventory.view',
     'discipline.view',
+    'events.view',
+    'documents.view',
+    'infrastructure.view',
+    'inspections.view',
+    'gis.view',
   ],
   'Deputy Principal Administration': [
     'schools.view',
@@ -113,6 +129,12 @@ const rolePermissions: Record<string, string[]> = {
     'transport.view',
     'inventory.view',
     'discipline.view',
+    'discipline.manage',
+    'events.view',
+    'events.manage',
+    'infrastructure.view',
+    'infrastructure.manage',
+    'inspections.view',
   ],
   'Deputy Principal Academics': [
     'schools.view',
@@ -129,6 +151,8 @@ const rolePermissions: Record<string, string[]> = {
     'lms.view',
     'intelligence.view',
     'communication.send',
+    'events.view',
+    'documents.view',
   ],
   Bursar: [
     'schools.view',
@@ -138,6 +162,7 @@ const rolePermissions: Record<string, string[]> = {
     'finance.submit',
     'reports.view',
     'communication.send',
+    'documents.view',
   ],
   HOD: [
     'schools.view',
@@ -147,6 +172,7 @@ const rolePermissions: Record<string, string[]> = {
     'curriculum.view',
     'marks.view',
     'marks.submit',
+    'documents.view',
   ],
   Teacher: [
     'schools.view',
@@ -157,6 +183,7 @@ const rolePermissions: Record<string, string[]> = {
     'lms.view',
     'marks.view',
     'marks.create',
+    'events.view',
   ],
   'Board Chairperson': [
     'schools.view',
@@ -171,6 +198,11 @@ const rolePermissions: Record<string, string[]> = {
     'transport.view',
     'inventory.view',
     'discipline.view',
+    'events.view',
+    'documents.view',
+    'infrastructure.view',
+    'inspections.view',
+    'gis.view',
   ],
 };
 
@@ -224,6 +256,10 @@ async function main() {
     'health',
     'discipline',
     'events',
+    'documents',
+    'infrastructure',
+    'inspections',
+    'gis',
     'analytics',
   ];
 

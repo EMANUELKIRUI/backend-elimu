@@ -31,6 +31,19 @@ export class EnterpriseService {
     nationalExamCandidates: { delegate: 'nationalExamCandidate' },
     countryConfigs: { delegate: 'countryConfig', orderBy: { country: 'asc' } },
     aiJobs: { delegate: 'aiJob', orderBy: { createdAt: 'desc' }, withUserId: true },
+    disciplineCases: { delegate: 'disciplineCase', orderBy: { occurredAt: 'desc' } },
+    counselingNotes: { delegate: 'counselingNote', orderBy: { recordedAt: 'desc' } },
+    events: { delegate: 'schoolEvent', orderBy: { startsAt: 'asc' } },
+    eventAttendances: { delegate: 'eventAttendance' },
+    buildings: { delegate: 'building', orderBy: { name: 'asc' } },
+    classrooms: { delegate: 'classroomFacility', orderBy: { name: 'asc' } },
+    facilities: { delegate: 'facility', orderBy: { name: 'asc' } },
+    maintenanceRecords: { delegate: 'maintenanceRecord', orderBy: { reportedAt: 'desc' } },
+    inspectionTemplates: { delegate: 'inspectionTemplate', orderBy: { name: 'asc' } },
+    inspections: { delegate: 'inspection', orderBy: { createdAt: 'desc' } },
+    complianceActions: { delegate: 'complianceAction', orderBy: { createdAt: 'desc' } },
+    geoRegions: { delegate: 'geoRegion', orderBy: { name: 'asc' } },
+    locations: { delegate: 'location', orderBy: { createdAt: 'desc' } },
   };
 
   constructor(private readonly prisma: PrismaService) {}
