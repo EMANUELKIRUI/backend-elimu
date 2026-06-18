@@ -218,6 +218,7 @@ model School {
   backupJobs             BackupJob[]
   aiJobs                 AiJob[]
   auditLogs              AuditLog[]
+  workflows              Workflow[]
   purchaseOrders         PurchaseOrder[]
   leaveOuts              LeaveOut[]
   boardingIncidents      BoardingIncident[]
@@ -1746,6 +1747,20 @@ model AuditLog {
 
   school School? @relation(fields: [schoolId], references: [id])
   user   User?   @relation(fields: [userId], references: [id])
+}
+
+model Workflow {
+  id          String   @id @default(uuid())
+  schoolId    String?
+  name        String
+  description String?
+  targetModule String?
+  status      String   @default("ACTIVE")
+  steps       Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school School? @relation(fields: [schoolId], references: [id])
 }
 
 model DocumentFolder {
